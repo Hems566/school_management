@@ -1,0 +1,28 @@
+name: school_management
+description: School Management System
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  get: ^4.6.6
+  http: ^1.1.0
+  shared_preferences: ^2.2.1
+  uni_links: ^0.5.1
+  url_launcher: ^6.1.14
+  cupertino_icons: ^1.0.2
+  email_validator: ^2.1.17  # Pour la validation des emails
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
