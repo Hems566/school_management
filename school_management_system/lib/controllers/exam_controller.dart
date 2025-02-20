@@ -27,6 +27,7 @@ class ExamController extends GetxController {
 
   // Track sélectionné
   final RxString selectedTrack = RxString('Réseaux et Systèmes Communicants');
+  final RxString selectedSubject = RxString('');
 
   // Liste des tracks disponibles
   final tracks = ['Réseaux et Systèmes Communicants', 'Systèmes Informations'];
@@ -40,6 +41,35 @@ class ExamController extends GetxController {
   bool get isStudent => _authController.currentUser.value?.role == 'student';
 
   // Charger la liste des étudiants par track
+  // Charger tous les résultats (filtré par matière si sélectionnée)
+  Future<void> loadAllResults() async {
+    try {
+      isLoading.value = true;
+      error.value = '';
+
+      if (selectedTrack.value.isEmpty) {
+        results.clear();
+        return;
+      }
+
+      final allResults = await examService.getTrackResults(
+        selectedTrack.value,
+        selectedSubject.value,
+      );
+      results.assignAll(allResults.cast<Map<String, dynamic>>());
+    } catch (e) {
+      error.value = e.toString();
+      AppNotification.showError(e.toString());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Sélectionner une matière
+  void selectSubject(String subject) {
+    selectedSubject.value = subject;
+  }
+
   Future<void> loadStudentsByTrack(String? track) async {
     try {
       isLoadingStudents.value = true;

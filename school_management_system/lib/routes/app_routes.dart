@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../middleware/auth_middleware.dart';
-import 'package:school_management/Screens/Admin/dashboard.dart';
+import 'package:school_management/Screens/Admin/DashboardScreen.dart';
 import 'package:school_management/Screens/Admin/subjects.dart';
 import 'package:school_management/Screens/Admin/teachers.dart';
 import 'package:school_management/Screens/Admin/schedule.dart';
@@ -10,6 +10,7 @@ import 'package:school_management/Screens/ExamResults/teacher_results.dart';
 import 'package:school_management/Screens/ExamResults/student_results.dart';
 import 'package:school_management/Screens/ForgetPassword.dart';
 import 'package:school_management/Screens/home.dart';
+import 'package:school_management/Screens/home_router.dart';
 import 'package:school_management/Screens/LoginPage.dart';
 import 'package:school_management/Screens/RequestLogin.dart';
 import 'package:school_management/Screens/ResetPassword.dart';
@@ -90,15 +91,16 @@ class AppRoutes {
     // Pages protégées
     GetPage(
       name: home,
-      page: () => const Home(),
+      page: () => const HomeRouter(),
       middlewares: authGuard,
     ),
 
     // Pages admin
     GetPage(
       name: adminDashboard,
-      page: () => AdminDashboard(),
+      page: () => DashboardScreen(),
       middlewares: adminGuard,
+      transition: Transition.fadeIn,
     ),
     GetPage(
       name: adminTeachers,

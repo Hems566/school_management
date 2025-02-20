@@ -78,13 +78,13 @@ class MainDrawer extends StatelessWidget {
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
-                    _buildMenuItem(
-                      context,
-                      icon: Icons.home_outlined,
-                      title: "Accueil",
-                      onTap: () => Get.toNamed(AppRoutes.home),
-                    ),
                     if (userRole == 'student') ...[
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.home_outlined,
+                        title: "Accueil",
+                        onTap: () => Get.toNamed(AppRoutes.home),
+                      ),
                       _buildMenuItem(
                         context,
                         icon: Icons.calendar_month_outlined,
@@ -101,6 +101,12 @@ class MainDrawer extends StatelessWidget {
                     if (userRole == 'teacher') ...[
                       _buildMenuItem(
                         context,
+                        icon: Icons.home_outlined,
+                        title: "Accueil",
+                        onTap: () => Get.toNamed(AppRoutes.home),
+                      ),
+                      _buildMenuItem(
+                        context,
                         icon: Icons.calendar_month_outlined,
                         title: "Mon emploi du temps",
                         onTap: () => Get.toNamed(AppRoutes.teacherSchedule),
@@ -113,6 +119,12 @@ class MainDrawer extends StatelessWidget {
                       ),
                     ],
                     if (userRole == 'admin') ...[
+                      _buildMenuItem(
+                        context,
+                        icon: Icons.home_outlined,
+                        title: "Accueil",
+                        onTap: () => Get.toNamed(AppRoutes.adminDashboard),
+                      ),
                       _buildMenuItem(
                         context,
                         icon: Icons.calendar_month_outlined,

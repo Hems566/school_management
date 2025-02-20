@@ -151,6 +151,35 @@ class ExamService {
     }
   }
 
+  // Récupérer les résultats pour un track (optionnellement filtré par matière)
+  Future<List<dynamic>> getTrackResults(String track, String subject) async {
+    try {
+      final headers = await _getHeaders();
+      var url = '$baseUrl/results/track/${Uri.encodeComponent(track)}';
+
+      if (subject.isNotEmpty) {
+        url += '?subject=${Uri.encodeComponent(subject)}';
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['data'] ?? [];
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(
+            error['message'] ?? 'Impossible de récupérer les résultats');
+      }
+    } catch (e) {
+      print('Error in getTrackResults: $e');
+      rethrow;
+    }
+  }
+
   // Calculer les résultats finaux d'un étudiant
   Future<Map<String, dynamic>> calculateFinalResults(int studentId) async {
     try {

@@ -6,6 +6,7 @@ import 'package:school_management/controllers/request_login_controller.dart';
 import 'package:school_management/controllers/subject_controller.dart';
 import 'package:school_management/controllers/teacher_controller.dart';
 import 'package:school_management/services/auth_service.dart';
+import 'package:school_management/services/dashboard_service.dart';
 import 'package:school_management/services/exam_service.dart';
 import 'package:school_management/services/schedule_service.dart';
 import 'package:school_management/services/subject_service.dart';
@@ -19,11 +20,15 @@ class AppBinding extends Bindings {
       TeacherService(),
       permanent: true,
     );
-    Get.put(AuthService(), permanent: true);
     Get.put<SubjectService>(
       SubjectService(),
       permanent: true,
     );
+    Get.put<DashboardService>(
+      DashboardService(),
+      permanent: true,
+    );
+
     // S'assurer que le token est disponible
     final authService = Get.find<AuthService>();
     final token = authService.token;
@@ -41,9 +46,12 @@ class AppBinding extends Bindings {
     );
 
     // Controllers - Ne pas réinjecter AuthController car déjà injecté dans main.dart
-    Get.put<HomeController>(
-      HomeController(authService: Get.find<AuthService>()),
-      permanent: true,
+    Get.lazyPut<HomeController>(
+      () => HomeController(
+        authService: Get.find<AuthService>(),
+        dashboardService: Get.find<DashboardService>(),
+      ),
+      fenix: true,
     );
     Get.put<TeacherController>(
       TeacherController(teacherService: Get.find<TeacherService>()),
@@ -75,6 +83,7 @@ class AppBinding extends Bindings {
       } else if (authController.isAdmin) {
         // Charger les données initiales pour un admin
         subjectController.loadSubjects();
+        Get.find<HomeController>().loadDashboardData();
       }
     }
   }

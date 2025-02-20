@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:school_management/controllers/home_controller.dart';
 import 'package:school_management/services/auth_service.dart';
 import 'package:school_management/services/UserModel.dart';
 import 'package:school_management/utils/app_notification.dart';
@@ -34,6 +35,8 @@ class AuthController extends GetxController {
   void _redirectBasedOnRole(String role) {
     switch (role) {
       case 'admin':
+        Get.find<HomeController>()
+            .loadDashboardData(); // Charger les données en premier
         Get.offAllNamed(AppRoutes.adminDashboard);
         break;
       case 'teacher':

@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:school_management/controllers/auth_controller.dart';
 import 'package:school_management/controllers/exam_controller.dart';
+import 'package:school_management/controllers/subject_controller.dart';
 import 'package:school_management/Widgets/PageWrapper.dart';
 import 'package:school_management/Widgets/GradeInputForm.dart';
 import 'package:school_management/services/UserModel.dart';
+import 'package:school_management/utils/app_notification.dart';
+import 'package:school_management/Widgets/GradeTablePainter.dart';
 
 class TeacherResultsPage extends StatelessWidget {
   final ExamController _examController = Get.find<ExamController>();
@@ -27,9 +30,62 @@ class TeacherResultsPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTrackSelection(),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: _buildTrackSelection(),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    flex: 1,
+                    child: _buildSubjectSelection(),
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
-              _buildStudentsList(),
+              Obx(() => _examController.selectedSubject.value.isNotEmpty
+                  ? Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 16.0),
+                      child: Card(
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.book,
+                                  color: Colors.green, size: 28),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Matière sélectionnée',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _examController.selectedSubject.value,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink()),
+              _buildCombinedTable(),
             ],
           ),
         );
@@ -70,7 +126,10 @@ class TeacherResultsPage extends StatelessWidget {
                     }
                     return null;
                   },
-                  onChanged: _examController.selectTrack,
+                  onChanged: (value) {
+                    _examController.selectTrack(value);
+                    _examController.loadAllResults();
+                  },
                 )),
           ],
         ),
@@ -78,132 +137,116 @@ class TeacherResultsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStudentsList() {
+  Widget _buildSubjectSelection() {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.all(8),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Sélection de la Matière',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GetBuilder<SubjectController>(
+              init: Get.find<SubjectController>(),
+              builder: (subjectController) {
+                return DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Matière',
+                    border: OutlineInputBorder(),
+                  ),
+                  value: _examController.selectedSubject.value.isEmpty
+                      ? null
+                      : _examController.selectedSubject.value,
+                  items: [
+                    const DropdownMenuItem(
+                      value: '',
+                      child: Text('Toutes les matières'),
+                    ),
+                    ...subjectController.subjects
+                        .map((subject) => DropdownMenuItem(
+                              value: subject.name,
+                              child: Text(subject.name),
+                            ))
+                        .toList(),
+                  ],
+                  onChanged: (value) {
+                    _examController.selectSubject(value ?? '');
+                    _examController.loadAllResults();
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCombinedTable() {
     return Obx(() {
       if (_examController.selectedTrack.value.isEmpty) {
-        return const SizedBox.shrink();
+        return const Center(
+          child: Text('Veuillez sélectionner un track et une matière'),
+        );
+      }
+
+      if (_examController.isLoadingStudents.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (_examController.students.isEmpty) {
+        return const Center(
+          child: Text('Aucun étudiant trouvé pour ce track'),
+        );
       }
 
       return Card(
+        elevation: 4,
+        margin: const EdgeInsets.all(8),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Étudiants - ${_examController.selectedTrack.value}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (_examController.isLoadingStudents.value)
-                const Center(child: CircularProgressIndicator())
-              else if (_examController.students.isEmpty)
-                const Text('Aucun étudiant trouvé pour ce track')
-              else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _examController.students.length,
-                  itemBuilder: (context, index) {
-                    final student = _examController.students[index];
-                    return ListTile(
-                      title: Text(
-                          '${student.firstName} ${student.lastName}'.trim()),
-                      subtitle: Text('#${student.id}'),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          _examController.selectedStudentId.value = student.id;
-                          _showGradeInputDialog(context, student);
-                        },
-                        child: const Text('Saisir les notes'),
-                      ),
-                    );
-                  },
-                ),
-              if (_examController.results.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                const Text(
-                  'Résultats',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                _buildResultsTable(),
-              ],
-            ],
+          child: GradeTablePainter(
+            students: _examController.students,
+            results: _examController.results,
+            onGradeUpdated: (studentId, field, value) {
+              if (value.isEmpty) return;
+
+              final score = double.tryParse(value);
+              if (score == null || score < 0 || score > 20) {
+                AppNotification.showError(
+                    'La note doit être comprise entre 0 et 20');
+                return;
+              }
+
+              final subjectController = Get.find<SubjectController>();
+              final selectedSubject = subjectController.subjects.firstWhere(
+                (s) => s.name == _examController.selectedSubject.value,
+                orElse: () => throw Exception('Matière non trouvée'),
+              );
+
+              final data = {
+                'subject_id': selectedSubject.id,
+                'tp_score': field == 'tp_score' ? score : null,
+                'continuous_assessment_score':
+                    field == 'continuous_assessment_score' ? score : null,
+                'final_exam_score': field == 'final_exam_score' ? score : null,
+                'retake_score': field == 'retake_score' ? score : null,
+              };
+
+              _examController.addOrUpdateGrade(
+                  studentId, selectedSubject.id, data);
+            },
           ),
         ),
       );
     });
-  }
-
-  void _showGradeInputDialog(BuildContext context, UserModel student) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Saisie des notes pour ${student.firstName} ${student.lastName}'
-                      .trim(),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GradeInputForm(
-                  onSave: (data) {
-                    _examController.addOrUpdateGrade(
-                      student.id,
-                      data['subject_id'] as int,
-                      data,
-                    );
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildResultsTable() {
-    return Card(
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Étudiant')),
-            DataColumn(label: Text('TP (20%)')),
-            DataColumn(label: Text('CC (30%)')),
-            DataColumn(label: Text('Examen (50%)')),
-            DataColumn(label: Text('Rattrapage')),
-            DataColumn(label: Text('Note Finale')),
-          ],
-          rows: _examController.results.map((result) {
-            return DataRow(
-              cells: [
-                DataCell(Text(result['student_name'] ?? '')),
-                DataCell(Text(result['tp_score']?.toString() ?? '-')),
-                DataCell(Text(
-                    result['continuous_assessment_score']?.toString() ?? '-')),
-                DataCell(Text(result['final_exam_score']?.toString() ?? '-')),
-                DataCell(Text(result['retake_score']?.toString() ?? '-')),
-                DataCell(Text(result['final_score']?.toString() ?? '-')),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
   }
 }
